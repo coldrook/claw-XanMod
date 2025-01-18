@@ -51,13 +51,13 @@ PSABI_OUTPUT=$(./check_x86-64_psabi.sh)
 
 
 # 根据 CPU 支持的 PSABI 安装内核
-if grep -q "CPU supports x86-64-v4" <<< "$PSABI_OUTPUT"; then
+if echo "$PSABI_OUTPUT" | grep -q "CPU supports x86-64-v4"; then
   echo "CPU 支持 x86-64-v4，安装 linux-xanmod-x64v4 内核..."
   sudo apt install -y linux-xanmod-x64v4
-elif grep -q "CPU supports x86-64-v3" <<< "$PSABI_OUTPUT"; then
+elif echo "$PSABI_OUTPUT" | grep -q "CPU supports x86-64-v3"; then
   echo "CPU 支持 x86-64-v3，安装 linux-xanmod-x64v3 内核..."
   sudo apt install -y linux-xanmod-x64v3
-elif grep -q "CPU supports x86-64-v2" <<< "$PSABI_OUTPUT"; then
+elif echo "$PSABI_OUTPUT" | grep -q "CPU supports x86-64-v2"; then
   echo "CPU 支持 x86-64-v2，安装 linux-xanmod-x64v2 内核..."
   sudo apt install -y linux-xanmod-x64v2
 else
