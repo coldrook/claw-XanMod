@@ -8,5 +8,5 @@ bash <(curl -sL https://raw.githubusercontent.com/coldrook/claw-XanMod/refs/head
 ```
 内核优化
 ```sh
-wget -O xanmod.sh "https://raw.githubusercontent.com/coldrook/claw-XanMod/refs/heads/main/clawtcp.sh" && chmod +x clawtcp.sh && ./clawtcp.sh
+wget -O clawtcp.sh "https://raw.githubusercontent.com/coldrook/claw-XanMod/refs/heads/main/clawtcp.sh" && chmod +x clawtcp.sh && ./clawtcp.sh
 ```
