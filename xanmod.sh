@@ -41,6 +41,13 @@ cpu_abi_check() {
 cpu_abi_output=$(cpu_abi_check)
 cpu_abi_level=$(echo "$cpu_abi_output" | grep -o '[0-9]$')
 
+echo "CPU ABI 检测结果："
+echo "$cpu_abi_output"
+echo "提取的 ABI Level: $cpu_abi_level"
+
+# 在这里暂停执行
+read -p "按 Enter 继续安装内核..."
+
 # 6. 根据 CPU 支持安装相应的 XanMod 内核
 echo "6. 根据 CPU 支持安装 XanMod 内核..."
 
