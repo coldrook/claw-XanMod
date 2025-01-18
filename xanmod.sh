@@ -21,34 +21,48 @@ echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.
 echo "4. 更新 apt 仓库列表..."
 sudo apt update
 
-# 5. 下载并执行 CPU 检查脚本
+# 5.  CPU 检查脚本 (使用 awk)
 echo "5. 检查 CPU 支持的 x86-64 ABI..."
-if [ -f ./check_x86-64_psabi.sh ]; then
-  rm ./check_x86-64_psabi.sh
-fi
-wget https://raw.githubusercontent.com/yumaoss/xanmod_tools/refs/heads/main/check_x86-64_psabi.sh
-chmod +x check_x86-64_psabi.sh
-OUTPUT=$(./check_x86-64_psabi.sh)
+
+cpu_abi_check() {
+  awk '
+    BEGIN {
+        while (!/flags/) if (getline < "/proc/cpuinfo" != 1) exit 1
+        if (/lm/&&/cmov/&&/cx8/&&/fpu/&&/fxsr/&&/mmx/&&/syscall/&&/sse2/) level = 1
+        if (level == 1 && /cx16/&&/lahf/&&/popcnt/&&/sse4_1/&&/sse4_2/&&/ssse3/) level = 2
+        if (level == 2 && /avx/&&/avx2/&&/bmi1/&&/bmi2/&&/f16c/&&/fma/&&/abm/&&/movbe/&&/xsave/) level = 3
+        if (level == 3 && /avx512f/&&/avx512bw/&&/avx512cd/&&/avx512dq/&&/avx512vl/) level = 4
+        if (level > 0) { print "CPU supports x86-64-v" level; exit level + 1 }
+        exit 1
+    }
+  '
+}
+
+cpu_abi_output=$(cpu_abi_check)
+cpu_abi_level=$(echo "$cpu_abi_output" | grep -o '[0-9]$')
 
 # 6. 根据 CPU 支持安装相应的 XanMod 内核
 echo "6. 根据 CPU 支持安装 XanMod 内核..."
-if grep -q "CPU supports x86-64-v4" <<< "$OUTPUT"; then
-  echo "CPU 支持 x86-64-v4，安装 linux-xanmod-x64v4"
-  sudo apt install -y linux-xanmod-x64v4
-elif grep -q "CPU supports x86-64-v3" <<< "$OUTPUT"; then
-  echo "CPU 支持 x86-64-v3，安装 linux-xanmod-x64v3"
-  sudo apt install -y linux-xanmod-x64v3
-elif grep -q "CPU supports x86-64-v2" <<< "$OUTPUT"; then
-  echo "CPU 支持 x86-64-v2，安装 linux-xanmod-x64v2"
-  sudo apt install -y linux-xanmod-x64v2
-else
-  echo "CPU 不支持 x86-64-v4/v3/v2，无法安装 XanMod 内核。"
-  echo "请检查 CPU 支持并手动选择合适的内核。"
-  exit 1
-fi
 
-# 7. 清理临时文件
-echo "7. 清理临时文件..."
-rm check_x86-64_psabi.sh
+case "$cpu_abi_level" in
+  4)
+    echo "CPU 支持 x86-64-v4，安装 linux-xanmod-x64v4"
+    sudo apt install -y linux-xanmod-x64v4
+    ;;
+  3)
+    echo "CPU 支持 x86-64-v3，安装 linux-xanmod-x64v3"
+    sudo apt install -y linux-xanmod-x64v3
+    ;;
+  2)
+    echo "CPU 支持 x86-64-v2，安装 linux-xanmod-x64v2"
+    sudo apt install -y linux-xanmod-x64v2
+    ;;
+  *)
+    echo "CPU 不支持 x86-64-v4/v3/v2，无法安装 XanMod 内核。"
+    echo "请检查 CPU 支持并手动选择合适的内核。"
+    exit 1
+    ;;
+esac
 
+# 7. 清理临时文件 (不需要清理，因为没有下载临时文件)
 echo "XanMod 内核安装完成！请重启系统以使用新内核。"
