@@ -21,12 +21,17 @@ echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.
 echo "4. 更新 apt 仓库列表..."
 sudo apt update
 
-# 5.  CPU 检查脚本 (使用 awk)
+# 5. 检查 CPU 支持的 x86-64 ABI
 echo "5. 检查 CPU 支持的 x86-64 ABI..."
 
 cpu_abi_check() {
-  local awk_script='BEGIN { while (!/flags/) if (getline < "/proc/cpuinfo" != 1) exit 1; if (/lm/&&/cmov/&&/cx8/&&/fpu/&&/fxsr/&&/mmx/&&/syscall/&&/sse2/) level = 1; if (level == 1 && /cx16/&&/lahf/&&/popcnt/&&/sse4_1/&&/sse4_2/&&/ssse3/) level = 2; if (level == 2 && /avx/&&/avx2/&&/bmi1/&&/bmi2/&&/f16c/&&/fma/&&/abm/&&/movbe/&&/xsave/) level = 3; if (level == 3 && /avx512f/&&/avx512bw/&&/avx512cd/&&/avx512dq/&&/avx512vl/) level = 4; if (level > 0) { print "CPU supports x86-64-v" level; exit level + 1 } exit 1 }'
-  eval "awk '$awk_script'"
+  local awk_script='BEGIN { while (!/flags/) if (getline < "/proc/cpuinfo" != 1) exit 1;
+    if (/lm/ && /cmov/ && /cx8/ && /fpu/ && /fxsr/ && /mmx/ && /syscall/ && /sse2/) level = 1;
+    if (level == 1 && /cx16/ && /lahf_lm/ && /popcnt/ && /sse4_1/ && /sse4_2/) level = 2;
+    if (level == 2 && /avx/ && /avx2/ && /bmi1/ && /bmi2/ && /fma/ && /movbe/ && /xsave/ && /xsaveopt/) level = 3;
+    if (level == 3 && /avx512f/ && /avx512cd/ && /avx512dq/ && /avx512bw/ && /avx512vl/) level = 4;
+    print level }'
+  awk "$awk_script"
 }
 
 cpu_abi_output=$(cpu_abi_check)
@@ -36,11 +41,8 @@ echo "CPU ABI 检测结果："
 echo "$cpu_abi_output"
 echo "提取的 ABI Level: $cpu_abi_level"
 
-# read -p "按 Enter 继续安装内核..."
-
 # 6. 根据 CPU 支持安装相应的 XanMod 内核
 echo "6. 根据 CPU 支持安装 XanMod 内核..."
-
 case "$cpu_abi_level" in
   4)
     echo "CPU 支持 x86-64-v4，安装 linux-xanmod-x64v4"
@@ -61,5 +63,8 @@ case "$cpu_abi_level" in
     ;;
 esac
 
-# 7. 清理临时文件 (不需要清理，因为没有下载临时文件)
+# 7. 清理临时文件
+echo "7. 清理临时文件..."
+rm check_x86-64_psabi.sh
+
 echo "XanMod 内核安装完成！请重启系统以使用新内核。"
