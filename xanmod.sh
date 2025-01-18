@@ -23,6 +23,7 @@ sudo apt update
 
 # 5. 下载并执行 CPU 检查脚本
 echo "5. 检查 CPU 支持的 x86-64 ABI..."
+rm -f ./check_x86-64_psabi.sh
 wget https://raw.githubusercontent.com/yumaoss/xanmod_tools/refs/heads/main/check_x86-64_psabi.sh
 chmod +x check_x86-64_psabi.sh
 OUTPUT=$(./check_x86-64_psabi.sh)
