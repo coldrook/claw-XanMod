@@ -35,7 +35,9 @@ if [ -f "check_x86-64_psabi.sh" ]; then
 fi
 
 # 下载脚本
+echo "正在下载 check_x86-64_psabi.sh..."
 wget https://raw.githubusercontent.com/yumaoss/xanmod_tools/refs/heads/main/check_x86-64_psabi.sh
+echo "check_x86-64_psabi.sh 下载完成。"
 
 # 检查下载是否成功
 if [ $? -ne 0 ]; then
@@ -44,10 +46,14 @@ if [ $? -ne 0 ]; then
 fi
 
 # 赋予脚本执行权限
+echo "正在赋予 check_x86-64_psabi.sh 执行权限..."
 chmod +x check_x86-64_psabi.sh
+echo "check_x86-64_psabi.sh 执行权限赋予完成。"
 
 # 执行脚本并捕获输出
+echo "正在执行 check_x86-64_psabi.sh 并捕获输出..."
 PSABI_OUTPUT=$(./check_x86-64_psabi.sh)
+echo "check_x86-64_psabi.sh 执行完成，输出为：$PSABI_OUTPUT"
 
 
 # 根据 CPU 支持的 PSABI 安装内核
@@ -66,6 +72,8 @@ else
 fi
 
 # 清理下载的脚本
+echo "正在清理下载的脚本..."
 rm check_x86-64_psabi.sh
+echo "清理完成。"
 
 echo "安装完成！请重启系统以使用新的内核。"
