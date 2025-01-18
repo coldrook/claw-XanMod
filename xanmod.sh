@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+# set -e  # 暂时禁用 set -e
 
 # 检查是否为 root 用户
 if [[ $EUID -ne 0 ]]; then
@@ -49,6 +49,11 @@ fi
 echo "正在赋予 check_x86-64_psabi.sh 执行权限..."
 chmod +x check_x86-64_psabi.sh
 echo "check_x86-64_psabi.sh 执行权限赋予完成。"
+
+# 查看脚本权限
+echo "正在查看 check_x86-64_psabi.sh 的权限..."
+ls -l check_x86-64_psabi.sh
+echo "权限查看完成。"
 
 # 执行脚本并捕获输出
 echo "正在执行 check_x86-64_psabi.sh 并捕获输出..."
