@@ -1,71 +1,71 @@
 #!/bin/bash
 
-set -e # 脚本出错时立即退出
+set -e
 
-echo "开始安装 XanMod 内核..."
+# 检查是否为 root 用户
+if [[ $EUID -ne 0 ]]; then
+  echo "请使用 sudo 或 root 用户运行此脚本"
+  exit 1
+fi
 
-# 1. 安装 gpg
-echo "1. 安装 gpg..."
-sudo apt-get update
-sudo apt-get install -y gpg
+# 安装 gpg
+echo "正在安装 gpg..."
+apt-get update
+apt-get install -y gpg
 
-# 2. 添加 XanMod GPG 密钥
-echo "2. 添加 XanMod GPG 密钥..."
+# 添加 XanMod GPG 密钥
+echo "正在添加 XanMod GPG 密钥..."
 wget -qO - https://github.com/yumaoss/xanmod_tools/raw/refs/heads/main/archive.key | sudo gpg --dearmor -vo /usr/share/keyrings/xanmod-archive-keyring.gpg
 
-# 3. 添加 XanMod 仓库
-echo "3. 添加 XanMod 仓库..."
+# 添加 XanMod APT 源
+echo "正在添加 XanMod APT 源..."
 echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | sudo tee /etc/apt/sources.list.d/xanmod-release.list
 
-# 4. 更新 apt 仓库列表
-echo "4. 更新 apt 仓库列表..."
+# 更新 APT 索引
+echo "正在更新 APT 索引..."
 sudo apt update
 
-# 5. 检查 CPU 支持的 x86-64 ABI
-echo "5. 检查 CPU 支持的 x86-64 ABI..."
+# 检查 CPU 支持的 x86-64 PSABI
+echo "正在检查 CPU 支持的 x86-64 PSABI..."
 
-cpu_abi_check() {
-  local awk_script='BEGIN { while (!/flags/) if (getline < "/proc/cpuinfo" != 1) exit 1;
-    if (/lm/ && /cmov/ && /cx8/ && /fpu/ && /fxsr/ && /mmx/ && /syscall/ && /sse2/) level = 1;
-    if (level == 1 && /cx16/ && /lahf/ && /popcnt/ && /sse4_1/ && /sse4_2/ && /ssse3/) level = 2;
-    if (level == 2 && /avx/ && /avx2/ && /bmi1/ && /bmi2/ && /fma/ && /movbe/ && /xsave/ && /xsaveopt/) level = 3;
-    if (level == 3 && /avx512f/ && /avx512cd/ && /avx512dq/ && /avx512bw/ && /avx512vl/) level = 4;
-    if (level > 0) { print "CPU supports x86-64-v" level; exit level + 1 }
-    exit 1 }'
-  awk "$awk_script"
-}
+# 检查是否存在同名脚本，如果存在则删除
+if [ -f "check_x86-64_psabi.sh" ]; then
+  echo "发现旧的 check_x86-64_psabi.sh 脚本，正在删除..."
+  rm "check_x86-64_psabi.sh"
+fi
 
-cpu_abi_output=$(cpu_abi_check)
-cpu_abi_level=$(echo "$cpu_abi_output" | grep -o '[0-9]$')
+# 下载脚本
+wget https://raw.githubusercontent.com/yumaoss/xanmod_tools/refs/heads/main/check_x86-64_psabi.sh
 
-echo "CPU ABI 检测结果："
-echo "$cpu_abi_output"
-echo "提取的 ABI Level: $cpu_abi_level"
+# 检查下载是否成功
+if [ $? -ne 0 ]; then
+  echo "下载 check_x86-64_psabi.sh 脚本失败，请检查网络连接。"
+  exit 1
+fi
 
-# 6. 根据 CPU 支持安装相应的 XanMod 内核
-echo "6. 根据 CPU 支持安装 XanMod 内核..."
-case "$cpu_abi_level" in
-  4)
-    echo "CPU 支持 x86-64-v4，安装 linux-xanmod-x64v4"
-    sudo apt install -y linux-xanmod-x64v4
-    ;;
-  3)
-    echo "CPU 支持 x86-64-v3，安装 linux-xanmod-x64v3"
-    sudo apt install -y linux-xanmod-x64v3
-    ;;
-  2)
-    echo "CPU 支持 x86-64-v2，安装 linux-xanmod-x64v2"
-    sudo apt install -y linux-xanmod-x64v2
-    ;;
-  *)
-    echo "CPU 不支持 x86-64-v4/v3/v2，无法安装 XanMod 内核。"
-    echo "请检查 CPU 支持并手动选择合适的内核。"
-    exit 1
-    ;;
-esac
+# 赋予脚本执行权限
+chmod +x check_x86-64_psabi.sh
 
-# 7. 清理临时文件
-echo "7. 清理临时文件..."
-#rm check_x86-64_psabi.sh # No such file
+# 执行脚本并捕获输出
+PSABI_OUTPUT=$(./check_x86-64_psabi.sh)
 
-echo "XanMod 内核安装完成！请重启系统以使用新内核。"
+
+# 根据 CPU 支持的 PSABI 安装内核
+if grep -q "CPU supports x86-64-v4" <<< "$PSABI_OUTPUT"; then
+  echo "CPU 支持 x86-64-v4，安装 linux-xanmod-x64v4 内核..."
+  sudo apt install -y linux-xanmod-x64v4
+elif grep -q "CPU supports x86-64-v3" <<< "$PSABI_OUTPUT"; then
+  echo "CPU 支持 x86-64-v3，安装 linux-xanmod-x64v3 内核..."
+  sudo apt install -y linux-xanmod-x64v3
+elif grep -q "CPU supports x86-64-v2" <<< "$PSABI_OUTPUT"; then
+  echo "CPU 支持 x86-64-v2，安装 linux-xanmod-x64v2 内核..."
+  sudo apt install -y linux-xanmod-x64v2
+else
+  echo "CPU 不支持 x86-64-v2/v3/v4，无法选择最佳 XanMod 内核。将安装默认的 linux-xanmod-x64 内核。"
+  sudo apt install -y linux-xanmod-x64
+fi
+
+# 清理下载的脚本
+rm check_x86-64_psabi.sh
+
+echo "安装完成！请重启系统以使用新的内核。"
